@@ -94,6 +94,8 @@ let reset obl p_ref =
 let with_role role obl = { obl with role }
 let role obl = obl.role
 
+let parsed obl = obl.parsed
+
 (* Should exist in any case. *)
 let loc obl =
   match obl.parsed with

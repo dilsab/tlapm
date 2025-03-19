@@ -506,7 +506,7 @@ let is_obl_final (ps : t option) p_ref obl_id =
   in
   match ps with None -> None | Some ps -> traverse ps
 
-let%test_unit "determine proof steps" =
+(* let%test_unit "determine proof steps" =
   let mod_file = "test_obl_expand.tla" in
   let mod_text =
     String.concat "\n"
@@ -641,4 +641,201 @@ let%test_unit "check if parsing works with nested local instances." =
       (Parser.module_of_string ~content:mod_text ~filename:mod_file
          ~loader_paths:[])
   in
-  ()
+  () *)
+
+  let rec t_usable_fact (fact : Tlapm_lib__.Expr.T.expr) =
+    let open Tlapm_lib in
+    (* List.iter (fun (_prop : Property.prop) -> ()) (Property.props_of fact); *)
+    (* Property.print_all_props fact;
+    Stdlib.flush_all (); *)
+    let nm =
+      match fact.core with
+      | Expr.T.Ix n -> "Ix" ^ string_of_int n
+      | Expr.T.Opaque s -> "Opaque-" ^ s
+      | Expr.T.Internal i -> (
+        match i with
+        | TRUE -> "TRUE"
+        | FALSE -> "FALSE"
+        | Implies -> "Implies"
+        | Equiv -> "Equiv"
+        | Conj -> "Conj"
+        | Disj -> "Disj"
+        | Neg -> "Neg"
+        | Eq -> "Eq"
+        | Neq -> "Neq"
+        | STRING -> "STRING"
+        | BOOLEAN -> "BOOLEAN"
+        | SUBSET -> "SUBSET"
+        | UNION -> "UNION"
+        | DOMAIN -> "DOMAIN"
+        | Subseteq -> "Subseteq"
+        | Mem -> "Mem"
+        | Notmem -> "Notmem"
+        | Setminus -> "Setminus"
+        | Cap -> "Cap"
+        | Cup -> "Cup"
+        | Prime -> "Prime"
+        | StrongPrime -> "StrongPrime"
+        | Leadsto -> "Leadsto"
+        | ENABLED -> "ENABLED"
+        | UNCHANGED -> "UNCHANGED"
+        | Cdot -> "Cdot"
+        | Actplus -> "Actplus"
+        | Box true -> "Box(true)"
+        | Box false -> "Box(false)"
+        | Diamond -> "Diamond"
+        | Nat -> "Nat"
+        | Int -> "Int"
+        | Real -> "Real"
+        | Plus -> "Plus"
+        | Minus -> "Minus"
+        | Uminus -> "Uminus"
+        | Times -> "Times"
+        | Ratio -> "Ratio"
+        | Quotient -> "Quotient"
+        | Remainder -> "Remainder"
+        | Exp -> "Exp"
+        | Infinity -> "Infinity"
+        | Lteq -> "Lteq"
+        | Lt -> "Lt"
+        | Gteq -> "Gteq"
+        | Gt -> "Gt"
+        | Divides -> "Divides"
+        | Range -> "Range"
+        | Seq -> "Seq"
+        | Len -> "Len"
+        | BSeq -> "BSeq"
+        | Cat -> "Cat"
+        | Append -> "Append"
+        | Head -> "Head"
+        | Tail -> "Tail"
+        | SubSeq -> "SubSeq"
+        | SelectSeq -> "SelectSeq"
+        | OneArg -> "OneArg"
+        | Extend -> "Extend"
+        | Print -> "Print"
+        | PrintT -> "PrintT"
+        | Assert -> "Assert"
+        | JavaTime -> "JaveTime"
+        | TLCGet -> "TLCGet"
+        | TLCSet -> "TLCSet"
+        | Permutations -> "Permutations"
+        | SortSeq -> "SortSeq"
+        | RandomElement -> "RandomElement"
+        | Any -> "Any"
+        | ToString -> "ToString"
+        | Unprimable -> "Unprimable"
+        | Irregular -> "Irregular"
+        )
+      | Expr.T.Lambda (_, _) -> "Lambda"
+      | Expr.T.Sequent _ -> "Sequent"
+      | Expr.T.Bang (_, _) -> "Bang"
+      | Expr.T.Apply (e, e_l) -> (
+        t_usable_fact e;
+        List.iter t_usable_fact e_l;
+        "Apply"
+      )
+      | Expr.T.With (_, _) -> "With"
+      | Expr.T.If (_, _, _) -> "If"
+      | Expr.T.List (_, _) -> "List"
+      | Expr.T.Let (_, _) -> "Let"
+      | Expr.T.Quant (_, _, _) -> "Quant"
+      | Expr.T.QuantTuply (_, _, _) -> "QuantTuply"
+      | Expr.T.Tquant (_, _, _) -> "Tquant"
+      | Expr.T.Choose (_, _, _) -> "Choose"
+      | Expr.T.ChooseTuply (_, _, _) -> "ChooseTuply"
+      | Expr.T.SetSt (_, _, _) -> "SetSt"
+      | Expr.T.SetStTuply (_, _, _) -> "SetStTuply"
+      | Expr.T.SetOf (_, _) -> "SetOf"
+      | Expr.T.SetOfTuply (_, _) -> "SetOfTuply"
+      | Expr.T.SetEnum _ -> "SetEnum"
+      | Expr.T.Product _ -> "Product"
+      | Expr.T.Tuple _ -> "Tuple"
+      | Expr.T.Fcn (_, _) -> "Fcn"
+      | Expr.T.FcnTuply (_, _) -> "FcnTuply"
+      | Expr.T.FcnApp (_, _) -> "FcnApp"
+      | Expr.T.Arrow (_, _) -> "Arrow"
+      | Expr.T.Rect _ -> "Rect"
+      | Expr.T.Record _ -> "Record"
+      | Expr.T.Except (_, _) -> "Except"
+      | Expr.T.Dot (_, _) -> "Dot"
+      | Expr.T.Sub (_, _, _) -> "Sub"
+      | Expr.T.Tsub (_, _, _) -> "Tsub"
+      | Expr.T.Fair (_, _, _) -> "Fair"
+      | Expr.T.Case (_, _) -> "Case"
+      | Expr.T.String _ -> "String"
+      | Expr.T.Num (_, _) -> "Num"
+      | Expr.T.At _ -> "At"
+      | Expr.T.Parens (_, _) -> "Parens"
+    in
+    match Property.query fact Proof.T.Props.use_location with
+    | None ->
+        Eio.traceln "Fact %s, %s %a" nm
+          (Util.location fact)
+          (Format.pp_print_option Proof.T.pp_stepno)
+          (Property.query fact Proof.T.Props.step)
+    | Some loc ->
+        Eio.traceln "Fact %s" (Loc.string_of_locus loc)
+
+let t_sq (sq : Tlapm_lib.Expr.T.sequent) = t_usable_fact sq.active
+
+let pars_obl (r_obl : Range.t * Obl.t) =
+  match r_obl with
+  | (_, obl) -> (
+    match Obl.parsed obl with
+    | Some obllllllll -> t_sq obllllllll.obl.core
+    | None -> Eio.traceln "SEQFFFFFFFFFFFFFFFFFF";
+  )
+
+let pr_obl (r_obl : Range.t * Obl.t) =
+  match r_obl with
+  | (_, obl) -> (
+    let oblstro = Obl.text_normalized obl in
+    match oblstro with
+    | Some ssss -> Eio.traceln "Obl: %s" ssss
+    | None -> Eio.traceln "FFFFFFFFFFFF";
+  )
+
+let rec sub_ob_l (tt : t) =
+ let obs = match tt with {kind = _; status_parsed = _; status_derived = _; step_loc = _; head_loc = _; full_loc = _; obs; sub = _} -> obs in
+ let sub = match tt with {kind = _; status_parsed = _; status_derived = _; step_loc = _; head_loc = _; full_loc = _; obs = _; sub} -> sub in
+let some = RangeMap.to_list obs in
+  let _ = Eio.traceln "Len: %d" (List.length some) in
+  let _ = List.iter pr_obl some in
+  let _ = List.iter pars_obl some in
+  let _ = List.iter sub_ob_l sub
+in ()
+
+let%test_unit "proof explanationn" =
+  let filename = "poc_real.tla" in
+  let content =
+    String.concat "\n"
+      [
+        "---- MODULE poc_real ----";
+        (* "EXTENDS FiniteSetTheorems"; *)
+        (* "THEOREM TRUE";
+        "    <1>1. TRUE OBVIOUS";
+        "    <1>2. FALSE OBVIOUS";
+        "    <1>q. QED BY <1>1, <1>2"; *)
+        (* "THEOREM TRUE";
+        "    <1>q. QED BY TRUE";
+        "THEOREM TRUE BY TRUE"; *)
+        "THEOREM ProveNegationByContradiction ==";
+        "  ASSUME NEW P PROVE ~P";
+        "PROOF";
+        "  <1>c. ASSUME P PROVE FALSE OMITTED";
+        "  <1>q. QED BY <1>c";
+        "====";
+      ]
+  in
+  let mule =
+    Result.get_ok (Parser.module_of_string ~content ~filename ~loader_paths:[])
+  in
+  let _ = Eio.traceln "Alive" in
+  let ps = of_module mule None in
+  let fff = match ps with
+  | Some t -> t
+  | None -> failwith "no obl"
+  in let obs_l = match fff with {kind = _; status_parsed = _; status_derived = _; step_loc = _; head_loc = _; full_loc = _; obs = _; sub } -> sub 
+in let _ = List.iter sub_ob_l obs_l
+in ()

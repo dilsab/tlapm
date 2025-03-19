@@ -49,6 +49,10 @@ let rec extend_with (hx, vx) hs = match Deque.front hs with
 let pp_print_obligation ff ob =
   ignore (pp_print_sequent (Deque.empty, Ctx.dot) ff ob.obl.core)
 
+
+let pp_print_obligation_fast ff obl =
+  ignore (pp_print_sequent (Deque.empty, Ctx.dot) ff obl.core)
+
 let prmeth what ff =
   let f m =
     Format.pp_print_string ff " " ;
