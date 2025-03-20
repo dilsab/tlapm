@@ -1,4 +1,10 @@
 ---- MODULE poc ----
+THEOREM ProveNegationByContradiction ==
+  ASSUME NEW P PROVE ~P
+PROOF
+  <1>c. ASSUME P PROVE FALSE OMITTED
+  <1>q. QED BY <1>c
+
 EXTENDS FiniteSetTheorems
 
 THEOREM TRUE
