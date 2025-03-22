@@ -118,7 +118,10 @@ let%test_unit "proof explanationn" =
         | Irregular -> "Irregular"
         )
       | Expr.T.Lambda (_, _) -> "Lambda"
-      | Expr.T.Sequent _ -> "Sequent"
+      | Expr.T.Sequent sq -> (
+        t_sq sq;
+        "Sequent"
+      )
       | Expr.T.Bang (_, _) -> "Bang"
       | Expr.T.Apply (e, e_l) -> (
         t_usable_fact e;
@@ -166,7 +169,51 @@ let%test_unit "proof explanationn" =
           (Property.query fact Proof.T.Props.step)
     | Some loc ->
         Eio.traceln "Fact %s" (Loc.string_of_locus loc)
-  (* Format.eprintf "%a" Expr.Fmt.pp_print_expr fact *)
+and t_sq (sq : Tlapm_lib.Expr.T.sequent) = (
+  t_usable_fact sq.active;
+  List.iter t_hyp (Tlapm_lib__Deque.to_list sq.context)
+  (* match Tlapm_lib__Deque.front sq.context with
+  | Some v ->  t_hyp v
+  | None -> () *)
+)
+
+and t_hyp (hy : Tlapm_lib.Expr.T.hyp) = (
+  match hy.core with
+  | Fresh (hint, _, _, hdom) -> (
+    Eio.traceln "Fresh %s" hint.core;
+    match hdom with
+    | Unbounded -> Eio.traceln "Unbounded"
+    | Bounded (expr, _) -> (
+      Eio.traceln "Bounded";
+      t_usable_fact expr;
+    )
+  )
+  | FreshTuply (_, _) -> Eio.traceln "FreshTuply"
+  | Flex (_) -> Eio.traceln "Flex"
+  | Defn (defn, _, _, _) -> (
+    match defn.core with
+    | Recursive (hint, _) -> (
+      (* hint * shape *)
+      Eio.traceln "Defn Recursive %s" hint.core
+    )
+    | Operator (hint, expr)  -> (
+      (* hint * expr *)
+      Eio.traceln "Defn Operator %s" hint.core;
+      t_usable_fact expr;
+    )
+    | Instance (hint, _)  -> (
+      (* hint * instance *)
+      Eio.traceln "Defn Instance %s" hint.core
+    )
+    | Bpragma (hint, _, _) -> (
+      Eio.traceln "Defn Bpragma %s" hint.core
+    )
+  )
+  | Fact (fact, _, _) -> (
+    (* Eio.traceln "Fact"; *)
+    t_usable_fact fact;
+  )
+)
   and t_step (st : Tlapm_lib.Proof.T.step) =
     match st.core with
     | Tlapm_lib.Proof.T.Assert (sq, pf) -> (
@@ -187,7 +234,6 @@ let%test_unit "proof explanationn" =
     | Tlapm_lib.Proof.T.Forget _  -> Eio.traceln "Forget"
   and t_qed_step (qs : Tlapm_lib.Proof.T.qed_step) =
     match qs.core with Tlapm_lib.Proof.T.Qed pf -> t_proof pf
-  and t_sq (sq : Tlapm_lib.Expr.T.sequent) = t_usable_fact sq.active
   and t_proof (pf : Tlapm_lib.Proof.T.proof) =
     match pf.core with
     | Tlapm_lib.Proof.T.Steps (sts, qed) -> (

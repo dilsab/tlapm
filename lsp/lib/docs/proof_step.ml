@@ -781,7 +781,9 @@ let%test_unit "check if parsing works with nested local instances." =
     | Some loc ->
         Eio.traceln "Fact %s" (Loc.string_of_locus loc)
 and t_sq (sq : Tlapm_lib.Expr.T.sequent) = (
+  Eio.traceln "sq.active";
   t_usable_fact sq.active;
+  Eio.traceln "sq.context";
   List.iter t_hyp (Tlapm_lib__Deque.to_list sq.context)
   (* match Tlapm_lib__Deque.front sq.context with
   | Some v ->  t_hyp v
@@ -843,13 +845,17 @@ let pr_obl (r_obl : Range.t * Obl.t) =
     | None -> Eio.traceln "FFFFFFFFFFFF";
   )
 
+let obl_inf (r_obl : Range.t * Obl.t) = (
+  pr_obl r_obl;
+  pars_obl r_obl;
+)
+
 let rec sub_ob_l (tt : t) =
  let obs = match tt with {kind = _; status_parsed = _; status_derived = _; step_loc = _; head_loc = _; full_loc = _; obs; sub = _} -> obs in
  let sub = match tt with {kind = _; status_parsed = _; status_derived = _; step_loc = _; head_loc = _; full_loc = _; obs = _; sub} -> sub in
 let some = RangeMap.to_list obs in
   let _ = Eio.traceln "Len: %d" (List.length some) in
-  let _ = List.iter pr_obl some in
-  let _ = List.iter pars_obl some in
+  let _ = List.iter obl_inf some in
   let _ = List.iter sub_ob_l sub
 in ()
 
