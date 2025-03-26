@@ -12,21 +12,22 @@ let%test_unit "proof explanationn" =
   let filename = "poc_real.tla" in
   let content =
     String.concat "\n"
-      [
+      (* [
         "---- MODULE poc_real ----";
-        (* "EXTENDS FiniteSetTheorems"; *)
-        (* "THEOREM TRUE";
-        "    <1>1. TRUE OBVIOUS";
-        "    <1>2. FALSE OBVIOUS";
-        "    <1>q. QED BY <1>1, <1>2"; *)
-        (* "THEOREM TRUE";
-        "    <1>q. QED BY TRUE";
-        "THEOREM TRUE BY TRUE"; *)
         "THEOREM ProveNegationByContradiction ==";
         "  ASSUME NEW P PROVE ~P";
         "PROOF";
         "  <1>c. ASSUME P PROVE FALSE OMITTED";
         "  <1>q. QED BY <1>c";
+        "====";
+      ] *)
+      [
+        "---- MODULE poc_real ----";
+        "THEOREM ProveImplicationDirect ==";
+        "  ASSUME NEW A, NEW B PROVE A => B";
+        "PROOF";
+        "  <1>1. ASSUME A PROVE B PROOF OMITTED";
+        "  <1>q. QED BY <1>1";
         "====";
       ]
   in

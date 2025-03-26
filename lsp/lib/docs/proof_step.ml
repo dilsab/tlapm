@@ -784,7 +784,9 @@ and t_sq (sq : Tlapm_lib.Expr.T.sequent) = (
   Eio.traceln "sq.active";
   t_usable_fact sq.active;
   Eio.traceln "sq.context";
-  List.iter t_hyp (Tlapm_lib__Deque.to_list sq.context)
+  List.iter t_hyp (Tlapm_lib__Deque.to_list sq.context);
+  (* let renamed = Tlapm_lib.Expr.Visit.name_operators sq.context sq.active in
+  let _ = t_usable_fact renamed in () *)
   (* match Tlapm_lib__Deque.front sq.context with
   | Some v ->  t_hyp v
   | None -> () *)
@@ -846,8 +848,20 @@ let pr_obl (r_obl : Range.t * Obl.t) =
   )
 
 let obl_inf (r_obl : Range.t * Obl.t) = (
-  pr_obl r_obl;
-  pars_obl r_obl;
+  match r_obl with
+  | (_, obl) -> (
+    match Obl.parsed obl with
+    | Some obllllllll -> (
+      match obllllllll.kind with
+      | Ob_main -> (
+        pr_obl r_obl;
+        pars_obl r_obl;
+      )
+      | Ob_support -> ()
+      | Ob_error (_) -> ()
+    )
+    | None -> Eio.traceln "obl_infFFFFFFFFFFFFFFFFFF";
+  )
 )
 
 let rec sub_ob_l (tt : t) =
@@ -863,23 +877,34 @@ let%test_unit "proof explanationn" =
   let filename = "poc_real.tla" in
   let content =
     String.concat "\n"
-      [
+      (* [
         "---- MODULE poc_real ----";
-        (* "EXTENDS FiniteSetTheorems"; *)
-        (* "THEOREM TRUE";
-        "    <1>1. TRUE OBVIOUS";
-        "    <1>2. FALSE OBVIOUS";
-        "    <1>q. QED BY <1>1, <1>2"; *)
-        (* "THEOREM TRUE";
-        "    <1>q. QED BY TRUE";
-        "THEOREM TRUE BY TRUE"; *)
         "THEOREM ProveNegationByContradiction ==";
-        "  ASSUME NEW P PROVE ~P";
+        "  ASSUME NEW V, NEW B, NEW P, NEW K, NEW D PROVE ~P";
         "PROOF";
         "  <1>c. ASSUME P PROVE FALSE OMITTED";
         "  <1>q. QED BY <1>c";
         "====";
+      ] *)
+      [
+        "---- MODULE poc_real ----";
+        "THEOREM ProveImplicationDirect ==";
+        "  ASSUME NEW A, NEW B PROVE A => B";
+        "PROOF";
+        "  <1>1. ASSUME A PROVE B PROOF OMITTED";
+        "  <1>q. QED BY <1>1";
+        "====";
       ]
+      (* [
+        "---- MODULE poc_real ----";
+        "THEOREM ProveConjunction ==";
+        "    ASSUME NEW A, NEW B PROVE A /\\ B";
+        "PROOF";
+        "    <1>a. A PROOF OMITTED";
+        "    <1>b. B PROOF OMITTED";
+        "    <1>q. QED BY <1>a, <1>b";
+        "====";
+      ] *)
   in
   let mule =
     Result.get_ok (Parser.module_of_string ~content ~filename ~loader_paths:[])
